@@ -1,0 +1,37 @@
+@font-face {
+  font-family: "Share Tech";
+  src: local("Share Tech"), local("ShareTech"), sans-serif;
+  font-display: swap;
+}
+
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css";
+@import "tailwindcss/utilities.css";
+@import "tailwindcss/preflight.css" layer(base);
+
+* { 
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html, body, #root {
+  overflow: hidden;
+  height: 100vh;
+}
+
+body {
+  background-color: #141414;
+}
+
+.font-eurostile {
+  font-family: 'Eurostile', sans-serif;
+}
+
+.font-sharetech {
+  font-family: 'Share Tech', sans-serif;
+}
