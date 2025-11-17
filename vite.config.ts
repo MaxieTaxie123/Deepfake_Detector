@@ -11,5 +11,9 @@ export default defineConfig({
       },
     }),
     tailwindcss(),
-  ]
+  ],
+  base: '/Deepfake/',
+  build: {
+    outDir: 'dist',
+  }
 })
