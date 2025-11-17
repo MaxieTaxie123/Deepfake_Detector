@@ -66,11 +66,12 @@ export const deepfakeMeta: DeepfakeMetaItem[] = [
   {
     // Pair 6
     fakeIndex: 0,
-    reason: "Notice how the skin is very plastic-like, the face looks too symmetrical and weirdly placed upon the head, and the background is very colourfully distorted.",
+    reason: "Notice how the skin is very plastic-like, the face looks too symmetrical and weirdly placed upon the head, the logo on the chest does not exist and the background is very colourfully distorted.",
     hotspots: [
       { x: 36, y: 35, size: 50, label: "Skin" },
       { x: 48, y: 20, size: 110, label: "Face" },
       { x: 85, y: 80, size: 120, label: "Background" },
+      { x: 65, y: 58, size: 40, label: "Logo" },
     ],
   },
 ];

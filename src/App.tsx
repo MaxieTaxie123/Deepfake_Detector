@@ -1,9 +1,12 @@
 import Container from "./components/Container";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useImagePreload } from "./imagePreload";
+import Tutorial from "./components/Tutorial";
 import "./App.css";
 
 function App() {
+  const [showTutorial, setShowTutorial] = useState(true)
+
   const { loaded, failed } = useImagePreload([
     "./deepfakes/Jonge-vrouw.jpg", "./reals/Jonge-vrouw-1.jpg",
     "./deepfakes/Oudere-man.jpg", "./reals/Oudere-man-1.jpg",
@@ -20,10 +23,10 @@ function App() {
     }
   }, [loaded, failed]);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 sans-serif text-center">
-      <Container />
-    </div>
+  return showTutorial ? (
+    <Tutorial onStart={() => setShowTutorial(false)} />
+  ) : (
+    <Container /> // your game component
   );
 }
 
