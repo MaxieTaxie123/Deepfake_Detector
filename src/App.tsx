@@ -1,5 +1,4 @@
-// src/App.tsx
-import Container from "./components/container";
+import Container from "./components/Container";
 import { useEffect } from "react";
 import { useImagePreload } from "./imagePreload";
 import "./App.css";
