@@ -219,10 +219,8 @@ const Container: React.FC = () => {
           >
             {Array.from({ length: 2 }).map((_, displayIndex) => {
               const pair = imagePairs[pairIndex] || [];
-              const dataIndex = layout[displayIndex]; // 🔁 map display -> data
+              const dataIndex = layout[displayIndex]; // map display -> data
               const src = pair[dataIndex] || pair[0] || "";
-              const meta = deepfakeMeta[pairIndex];
-              const isFakeCard = meta && dataIndex === meta.fakeIndex;
 
               return (
                 <div
@@ -254,22 +252,6 @@ const Container: React.FC = () => {
                             src={src}
                             alt={`Card ${displayIndex + 1}`}
                           />
-
-                          {/* Hotspot circles: only on fake card & when feedback visible */}
-                          {isFakeCard &&
-                            showFeedback &&
-                            meta?.hotspots?.map((spot, i) => (
-                              <Circle
-                                key={i}
-                                size={spot.size || 28}
-                                variant="outline"
-                                className="absolute -translate-x-1/2 -translate-y-1/2 border-b-red-400"
-                                style={{
-                                  left: `${spot.x}%`,
-                                  top: `${spot.y}%`,
-                                }}
-                              />
-                            ))}
                         </div>
                       </button>
                     </div>
