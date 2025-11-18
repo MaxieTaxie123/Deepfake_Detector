@@ -286,7 +286,7 @@ const Container: React.FC = () => {
             <div className="relative w-full h-full">
               {(() => {
                 const pair = imagePairs[pairIndex] || [];
-                const dataIndex = layout[wrongCardIndex]; // map overlay display -> data
+                const dataIndex = layout[wrongCardIndex];
                 const src = pair[dataIndex] || pair[0] || "";
                 const meta = deepfakeMeta[pairIndex];
                 const isFakeWrong =
