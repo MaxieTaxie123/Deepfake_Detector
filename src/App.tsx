@@ -7,14 +7,23 @@ import "./App.css";
 function App() {
   const [showTutorial, setShowTutorial] = useState(true)
 
-  const { loaded, failed } = useImagePreload([
+  const urls = [
     "./deepfakes/Jonge-vrouw.jpg", "./reals/Jonge-vrouw-1.jpg",
     "./deepfakes/Oudere-man.jpg", "./reals/Oudere-man-1.jpg",
     "./deepfakes/Pasfoto.jpg", "./reals/Pasfoto-1.jpg",
     "./deepfakes/Zijkant.jpg", "./reals/Zijkant-1.jpg",
     "./deepfakes/Zittende-vrouw.jpg", "./reals/Zittende-vrouw-1.jpg",
     "./deepfakes/Stef.jpg", "./reals/Stef-1.jpg",
-  ]);
+  ];
+
+  // saveToLocalStorage: true will attempt to convert images to data URLs and store them
+  const { loaded, failed } = useImagePreload(urls, {
+    saveToLocalStorage: true,     // keeps the opt-in flag name but will use chosen storage
+    storage: 'indexedDB',         // use IndexedDB (larger quota)
+    namespace: 'deepfake',        // optional
+    maxSizeKB: 1024 * 10,         // optional (still used for localStorage path)
+    maxEntries: 500,              // only used for localStorage eviction
+  });
 
   useEffect(() => {
     console.log("Preload complete:", loaded);
