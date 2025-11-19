@@ -1,4 +1,5 @@
 import React from "react";
+import { CheckCircle } from "lucide-react";
 
 type TutorialProps = {
   onStart?: () => void;
@@ -22,7 +23,7 @@ const Tutorial: React.FC<TutorialProps> = ({ onStart }) => {
         <div className="flex flex-col gap-6">
           <div className="rounded-full border border-red-500/60 bg-black/40 px-5 py-1 inline-flex">
             <p className="text-[0.55rem] tracking-[0.35em] uppercase text-red-400 font-sharetech">
-              Phantom&apos;s Lab — Deepfake Detector
+              Phantom's Lab — Deepfake Detector
             </p>
           </div>
 
@@ -32,7 +33,7 @@ const Tutorial: React.FC<TutorialProps> = ({ onStart }) => {
             </h1>
             <p className="text-sm md:text-base text-slate-200 font-sharetech leading-relaxed">
               Each round you will see <span className="font-semibold">two face images</span>. 
-              One of them is a <span className="text-red-400 font-semibold">deepfake</span> 
+              One of them is a <span className="text-red-400 font-semibold">deepfake </span> 
               (AI-generated), the other is likely real.
             </p>
             <ul className="text-sm text-slate-300 font-sharetech space-y-2 list-disc list-inside">
@@ -46,7 +47,7 @@ const Tutorial: React.FC<TutorialProps> = ({ onStart }) => {
                 A <span className="font-semibold">timer</span> at the top counts down. If it hits zero, you lose that round automatically.
               </li>
               <li>
-                Your <span className="font-semibold">streak</span> increases with each correct answer. The higher your streak, the less time you get on the next round.
+                Your <span className="font-semibold">streak</span> increases with each correct answer. You start at 30 seconds and with each streak increase, you lose 3 seconds.
               </li>
               <li>
                 A vertical <span className="font-semibold">progress bar</span> on the left shows how far you are through the image set.
@@ -76,13 +77,9 @@ const Tutorial: React.FC<TutorialProps> = ({ onStart }) => {
                 (e.g. hairline, earrings, shoulders).
               </li>
               <li>
-                The “<span className="font-semibold">wrong</span>” image for that round is
+                The deepfake image for that round is then
                 shown again in the <span className="font-semibold">center of the screen</span>,
                 so you can inspect it more closely.
-              </li>
-              <li>
-                While the feedback is open, the cards are{" "}
-                <span className="font-semibold">disabled</span> — you can’t make another choice.
               </li>
               <li>
                 Press <span className="font-semibold">“Next”</span> to flip the cards, load the
@@ -96,17 +93,17 @@ const Tutorial: React.FC<TutorialProps> = ({ onStart }) => {
             <button
               type="button"
               onClick={handleStart}
-              className="px-8 py-2 rounded-full border border-red-500 text-[0.8rem] tracking-[0.25em] uppercase font-semibold font-sharetech
+              className="flex justify-center items-center px-8 py-2 rounded-full border border-red-500 text-[0.8rem] tracking-[0.25em] uppercase font-semibold font-sharetech
                        bg-black/40 text-red-400 hover:bg-red-500/10 hover:text-red-200 
                        hover:shadow-[0_0_25px_rgba(248,113,113,0.7)] transition"
             >
-              Start
+              <CheckCircle className="h-5 w-5 mr-2" /> Start
             </button>
           </div>
         </div>
 
         {/* RIGHT: VISUAL MOCKUP */}
-        <div className="hidden md:flex justify-center">
+        <div className="hidden md:flex justify-end border-l border-red-700 pl-10">
           <div className="relative w-full max-w-sm">
             {/* Mock progress bar */}
             <div className="absolute py-5 -left-5 top-6 hidden lg:flex flex-col items-center">
@@ -117,7 +114,7 @@ const Tutorial: React.FC<TutorialProps> = ({ onStart }) => {
 
             {/* Mock cards */}
             <div className="space-y-4">
-              <p className="text-[0.7rem] py-2 uppercase tracking-[0.2em] text-slate-300 font-sharetech text-center mb-1">
+              <p className="text-[0.7rem] py-2 uppercase tracking-[0.2em] text-slate-300 font-sharetech text-center">
                 Example round
               </p>
               <div className="grid grid-cols-2 gap-4">
@@ -138,8 +135,8 @@ const Tutorial: React.FC<TutorialProps> = ({ onStart }) => {
               </div>
 
               {/* Mock centered wrong-card overlay */}
-            <div className="space-y-4">
-              <p className="text-[0.7rem] py-2 uppercase tracking-[0.2em] text-slate-300 font-sharetech text-center mt-4">
+            <div className="space-y-4 mt">
+              <p className="text-[0.7rem] py-2 uppercase tracking-[0.2em] text-slate-300 font-sharetech text-center mt-8">
                 Feedback View
               </p>
               <div className="relative">
@@ -163,11 +160,6 @@ const Tutorial: React.FC<TutorialProps> = ({ onStart }) => {
                 <p className="text-xs text-slate-200 mb-2">
                   Notice the irregular hairline and inconsistent lighting around the neck and shoulders.
                 </p>
-                <div className="flex justify-end">
-                  <span className="inline-flex items-center justify-center px-4 py-1 rounded-full border border-red-500 text-[0.7rem] uppercase tracking-[0.18em] text-slate-200">
-                    Next
-                  </span>
-                </div>
               </div>
             </div>
           </div>

@@ -6,7 +6,7 @@ import Summary from "./components/Summary";
 import "./App.css";
 
 function App() {
-    const [view, setView] = useState<"tutorial" | "game" | "summary">("tutorial");
+    const [view, setView] = useState<"tutorial" | "game" | "summary">("summary");
 
     const urls = [
       "./deepfakes/Jonge-vrouw.jpg", "./reals/Jonge-vrouw-1.jpg",
@@ -42,9 +42,7 @@ function App() {
     }
 
     return (
-      <Container
-        // if you want, you can later add an onFinished={() => setView("summary")}
-      />
+      <Container onFinished={() => setView("summary")} />
     );
 }
 

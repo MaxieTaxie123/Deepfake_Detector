@@ -11,9 +11,9 @@ const ANIMATION_DURATION = 2000; // ms
 const FLIP_TO_BACK_FRACTION = 0.25; // when cards are fully back-side up
 
 // Timer tuning
-const BASE_TIME = 15000; // 15s at streak 0
+const BASE_TIME = 30000; // 30s at streak 0
 const MIN_TIME = 5000; // min 5s
-const STREAK_STEP = 2000; // -2s per correct in a row
+const STREAK_STEP = 3000; // -3s per correct in a row
 
 const getRoundDuration = (streak: number) =>
   Math.max(MIN_TIME, BASE_TIME - streak * STREAK_STEP);
@@ -22,7 +22,11 @@ const getRoundDuration = (streak: number) =>
 const randomLayout = (): [0, 1] | [1, 0] =>
   Math.random() < 0.5 ? [0, 1] : [1, 0];
 
-const Container: React.FC = () => {
+type ContainerProps = {
+  onFinished?: () => void;
+};
+
+const Container: React.FC<ContainerProps> = ({ onFinished }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const boxRef = useRef<(HTMLDivElement | null)[]>([]);
   const [pairIndex, setPairIndex] = useState(0);
@@ -75,13 +79,22 @@ const Container: React.FC = () => {
     });
 
     // After cards are flipped to the back (at 25% of animation),
-    // update to the next image pair.
+    // update to the next image pair. If we've reached the last pair,
     const flipToBackTime = ANIMATION_DURATION * FLIP_TO_BACK_FRACTION;
     window.setTimeout(() => {
-      setPairIndex((prev) => (prev + 1) % imagePairs.length);
+      const next = pairIndex + 1;
+      if (next >= imagePairs.length) {
+        // end of rounds
+        setShowFeedback(false);
+        setSelectedIndex(null);
+        if (onFinished) onFinished();
+        return;
+      }
+
+      setPairIndex(next);
       setShowFeedback(false); // hide any old feedback for the new pair
       setSelectedIndex(null); // reset selection
-      setLayout(randomLayout()); // 🔀 randomize fake left/right for next pair
+      setLayout(randomLayout()); // randomize fake left/right for next pair
     }, flipToBackTime);
 
     setShowFeedback(false);
@@ -231,7 +244,7 @@ const Container: React.FC = () => {
                     ref={(el) => {
                       boxRef.current[displayIndex] = el;
                     }}
-                    className="flip-card-inner rounded-3xl w-full h-full border border-red-900/60 bg-[#060712]/90 transition-shadow duration-300"
+                    className="flip-card-inner rounded-3xl w-[40vw] h-full border border-red-900/60 bg-[#060712]/90 transition-shadow duration-300"
                   >
                     {/* FRONT */}
                     <div className="flip-card-front relative flex items-center bg-center justify-center rounded-3xl overflow-hidden">

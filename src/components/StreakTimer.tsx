@@ -27,7 +27,7 @@ const StreakTimer: React.FC<TimerProps> = ({ secondsLeft, streak }) => {
             isCritical ? "bg-red-500" : "bg-red-400"
           }`}
           style={{
-            width: `${Math.min(100, (secondsLeft / 15) * 100)}%`,
+            width: `${Math.min(100, (secondsLeft / 30) * 100)}%`,
           }}
         />
       </div>
