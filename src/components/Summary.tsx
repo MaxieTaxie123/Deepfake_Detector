@@ -14,8 +14,7 @@ const Summary: React.FC<SummaryProps> = ({ onBack }) => {
     null
   );
 
-  const showOverlay =
-    focusedPairIndex !== null && focusedImageIndex !== null;
+  const showOverlay = focusedPairIndex !== null && focusedImageIndex !== null;
 
   const handleImageClick = (pairIndex: number, imageIndex: 0 | 1) => {
     setFocusedPairIndex(pairIndex);
@@ -41,7 +40,7 @@ const Summary: React.FC<SummaryProps> = ({ onBack }) => {
           <div className="flex flex-col gap-2">
             <div className="rounded-full bg-black/40 px-5 py-1 inline-flex">
               <p className="text-[0.55rem] tracking-[0.35em] uppercase text-red-400 font-sharetech">
-                Phantom&apos;s Lab — Deepfake Detector
+                Phantom's Lab — Deepfake Detector
               </p>
             </div>
             <h1 className="text-xl md:text-2xl font-bold text-red-500 font-sharetech tracking-[0.25em] uppercase">
@@ -57,6 +56,17 @@ const Summary: React.FC<SummaryProps> = ({ onBack }) => {
 
         {/* Content list */}
         <div className="mt-2 space-y-6 overflow-y-auto max-h-[calc(100vh-9rem)] pr-2 rounded-2xl">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="px-5 py-2 rounded-full border border-red-500 text-[0.7rem] tracking-[0.25em] uppercase font-semibold font-sharetech
+                         bg-black/40 text-red-300 hover:bg-red-500/10 hover:text-red-100
+                         hover:shadow-[0_0_25px_rgba(248,113,113,0.7)] transition"
+            >
+              Back to explanation
+            </button>
+          )}
           {imagePairs.map((pair, index) => {
             const meta = deepfakeMeta[index];
             const fakeIndex = meta?.fakeIndex ?? 0;
@@ -75,7 +85,7 @@ const Summary: React.FC<SummaryProps> = ({ onBack }) => {
                 {/* Pair header */}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <span className="inline-flex items-center justify-center rounded-full border border-red-500/70 bg-black/60 px-3 py-1 text-[0.6rem] uppercase tracking-[0.2em] text-red-300 font-sharetech">
+                    <span className="inline-flex items-center justify-center rounded-full border border-red-500/70 bg-black/60 px-3 py-1 text-[0.6rem] uppercase tracking-[0.2em] text-red-300 font-sharetech mb-2">
                       Pair {index + 1}
                     </span>
                   </div>
@@ -163,7 +173,7 @@ const Summary: React.FC<SummaryProps> = ({ onBack }) => {
                   <p className="text-[0.6rem] uppercase tracking-[0.25em] text-red-400 font-sharetech mb-1">
                     Why this is a deepfake
                   </p>
-                  <p className="text-xs md:text-sm text-slate-200 font-sharetech leading-relaxed">
+                  <p className="text-xs md:text-sm text-slate-200 font-sharetech leading-relaxed mb-5">
                     {reason}
                   </p>
                 </div>
@@ -171,18 +181,6 @@ const Summary: React.FC<SummaryProps> = ({ onBack }) => {
             );
           })}
         </div>
-
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            className="px-5 py-2 rounded-full border border-red-500 text-[0.7rem] tracking-[0.25em] uppercase font-semibold font-sharetech
-                         bg-black/40 text-red-300 hover:bg-red-500/10 hover:text-red-100
-                         hover:shadow-[0_0_25px_rgba(248,113,113,0.7)] transition"
-          >
-            Back to training
-          </button>
-        )}
       </div>
 
       {/* FOCUSED IMAGE OVERLAY (like feedback card in game) */}

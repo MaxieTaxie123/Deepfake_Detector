@@ -6,7 +6,7 @@ import Summary from "./components/Summary";
 import "./App.css";
 
 function App() {
-    const [view, setView] = useState<"tutorial" | "game" | "summary">("summary");
+    const [view, setView] = useState<"tutorial" | "game" | "summary">("tutorial");
 
     const urls = [
       "./deepfakes/Jonge-vrouw.jpg", "./reals/Jonge-vrouw-1.jpg",
@@ -38,7 +38,7 @@ function App() {
     }
 
     if (view === "summary") {
-      return <Summary onBack={() => setView("game")} />;
+      return <Summary onBack={() => setView("tutorial")} />;
     }
 
     return (
