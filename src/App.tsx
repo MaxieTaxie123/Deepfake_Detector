@@ -1,4 +1,4 @@
-import Container from "./components/Container";
+import Container from "./components/container";
 import { useEffect, useState } from "react";
 import { useImagePreload } from "./imagePreload";
 import Tutorial from "./components/Tutorial";
