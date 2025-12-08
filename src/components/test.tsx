@@ -1,187 +1,350 @@
-import { CheckCircle } from "lucide-react";
+import VerticalProgress from "./ProgressBar";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import FeedbackPopup from "./FeedbackPopup";
+import StreakTimer from "./StreakTimer";
+import Circle from "./Circles";
+import { imagePairs } from "../data/pairs";
+import { deepfakeMeta } from "../data/deepfakeMeta";
+import "../App.css";
 
-type TutorialProps = {
-  onStart?: () => void;
+const ANIMATION_DURATION = 2000; // ms
+const FLIP_TO_BACK_FRACTION = 0.25; // when cards are fully back-side up
+
+// Timer tuning
+const BASE_TIME = 30000; // 30s at streak 0
+const MIN_TIME = 5000; // min 5s
+const STREAK_STEP = 3000; // -3s per correct in a row
+
+const getRoundDuration = (streak: number) =>
+  Math.max(MIN_TIME, BASE_TIME - streak * STREAK_STEP);
+
+// helper to randomize left/right layout
+const randomLayout = (): [0, 1] | [1, 0] =>
+  Math.random() < 0.5 ? [0, 1] : [1, 0];
+
+type ContainerProps = {
+  onFinished?: () => void;
 };
 
-export default function Test({ onStart }: TutorialProps) {
-  const handleStart = () => {
-    if (onStart) onStart();
+const Test: React.FC<ContainerProps> = ({ onFinished }) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const boxRef = useRef<(HTMLDivElement | null)[]>([]);
+  const [pairIndex, setPairIndex] = useState(0);
+
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackTitle, setFeedbackTitle] = useState("");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+
+  const [streak, setStreak] = useState(0);
+  const [timeLeft, setTimeLeft] = useState<number>(getRoundDuration(0));
+
+  // which card did the user click? 0/1 or null (display index)
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  // mapping from display index -> data index in imagePairs[pairIndex]
+  // e.g. [0,1] = fake left, [1,0] = fake right
+  const [layout, setLayout] = useState<[0, 1] | [1, 0]>(() => randomLayout());
+
+  const handleFlip = () => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Run flip animation on both cards
+    boxRef.current.forEach((item) => {
+      if (!item) return;
+
+      item.animate(
+        [
+          {
+            transform: "translate3d(0,0,0) rotateY(0deg)",
+            offset: 0,
+          },
+          {
+            transform: "translate3d(0,0,0) rotateY(180deg)",
+            offset: 0.25,
+          },
+          {
+            transform: "translate3d(0,0,0) rotateY(180deg)",
+            offset: 0.75,
+          },
+          {
+            transform: "translate3d(0,0,0) rotateY(360deg)",
+            offset: 1,
+          },
+        ],
+        {
+          duration: ANIMATION_DURATION,
+        }
+      );
+    });
+
+    // After cards are flipped to the back (at 25% of animation),
+    // update to the next image pair. If we've reached the last pair,
+    const flipToBackTime = ANIMATION_DURATION * FLIP_TO_BACK_FRACTION;
+    window.setTimeout(() => {
+      const next = pairIndex + 1;
+      if (next >= imagePairs.length) {
+        // end of rounds
+        setShowFeedback(false);
+        setSelectedIndex(null);
+        if (onFinished) onFinished();
+        return;
+      }
+
+      setPairIndex(next);
+      setShowFeedback(false); // hide any old feedback for the new pair
+      setSelectedIndex(null); // reset selection
+      setLayout(randomLayout()); // randomize fake left/right for next pair
+    }, flipToBackTime);
+
+    setShowFeedback(false);
   };
 
+  const handleTimeout = useCallback(() => {
+    if (showFeedback) return; // already showing something
+    setFeedbackTitle("Time's up!");
+    setFeedbackMessage(
+      "You ran out of time on this pair. Use the explanation to learn what to look for in deepfakes."
+    );
+    setShowFeedback(true);
+    setStreak(0); // reset streak on timeout
+  }, [showFeedback]);
+
+  const handleCardClick = (displayIndex: number) => {
+    if (showFeedback) return; // ignore clicks when feedback is open
+    const meta = deepfakeMeta[pairIndex];
+
+    // If we don't have meta for this pair, just show a generic message
+    if (!meta) {
+      setFeedbackTitle("Deepfake clue");
+      setFeedbackMessage(
+        "Look closely at skin texture, lighting, and edges of the face and hair. Small inconsistencies often reveal a deepfake."
+      );
+      setShowFeedback(true);
+      window.setTimeout(() => setShowFeedback(false), 6000);
+      return;
+    }
+
+    // meta.fakeIndex is the data index (usually 0)
+    // find which display index currently shows that data index
+    const fakeDisplayIndex = layout.findIndex(
+      (dataIdx) => dataIdx === meta.fakeIndex
+    );
+
+    const isDeepfake = displayIndex === fakeDisplayIndex;
+
+    // remember which card was chosen (display index)
+    setSelectedIndex(displayIndex);
+
+    // update streak based on correctness
+    setStreak((prev) => (isDeepfake ? prev + 1 : 0));
+
+    setFeedbackTitle(
+      isDeepfake
+        ? "Correct – this one is the deepfake."
+        : "This one is likely real."
+    );
+
+    setFeedbackMessage(
+      isDeepfake
+        ? meta.reason
+        : `Compare this with the other image: ${meta.reason}`
+    );
+
+    setShowFeedback(true);
+  };
+
+  useEffect(() => {
+    if (!imagePairs.length) return;
+
+    // If feedback is open, don't start/reset the timer yet
+    if (showFeedback) return;
+
+    const roundDuration = getRoundDuration(streak);
+    window.setTimeout(() => setTimeLeft(roundDuration), 0);
+
+    const endTime = Date.now() + roundDuration;
+
+    const id = window.setInterval(() => {
+      const remaining = endTime - Date.now();
+      if (remaining <= 0) {
+        clearInterval(id);
+        setTimeLeft(0);
+        handleTimeout();
+      } else {
+        setTimeLeft(remaining);
+      }
+    }, 100);
+
+    return () => {
+      clearInterval(id);
+    };
+  }, [pairIndex, streak, showFeedback, handleTimeout]);
+
+  const secondsLeft = Math.ceil(timeLeft / 1000);
+  const totalPairs = imagePairs.length;
+  const currentPairNumber = pairIndex + 1;
+
+  const currentMeta = deepfakeMeta[pairIndex];
+
+  // --- compute which card (display index) is the "wrong" one ----------
+  let wrongCardIndex: number | null = null;
+  if (selectedIndex !== null && currentMeta) {
+    const fakeDisplayIndex = layout.findIndex(
+      (dataIdx) => dataIdx === currentMeta.fakeIndex
+    );
+
+    wrongCardIndex = fakeDisplayIndex;
+  }
+  // --------------------------------------------------------------------
+
   return (
-    <div className="grid grid-cols-1 2xl:grid-cols-2 gap-8 h-screen p-6 2xl:p-20">
-      {/* LEFT PANEL */}
-      <div className="w-full h-full">
-        <div className="flex flex-col gap-6 w-full h-full">
-          <div className="rounded-full border border-red-500/60 bg-black/40 px-5 py-1 inline-flex">
-            <p className="text-[0.55rem] tracking-[0.35em] uppercase text-red-400 font-sharetech">
-              Phantom's Lab — Deepfake Detector
-            </p>
-          </div>
+    <>
+      <section
+        className="min-h-screen w-full overflow-x-hidden text-slate-50 relative select-none"
+        style={{
+          backgroundImage:
+            "radial-gradient(1200px 600px at 20% -10%, rgba(227,6,19,0.25), transparent 60%), radial-gradient(800px 500px at 90% 110%, rgba(227,6,19,0.18), transparent 55%)",
+        }}
+      >
+        <div className="h-screen w-auto flex items-center justify-center p-4">
+          <div ref={containerRef} className="grid grid-cols-5 grid-rows-5 gap-4 place-items-center place-content-center text-center w-full h-full">
+            <div className="fixed col-span-3 col-start-2 row-start-1 row-span-2 h-max w-max top-1">
+              {/* Top label + title block */}
+              <div className="flex flex-col items-center gap-4 p-5">
+                <h1 className="px-6 py-2 rounded-full border border-red-500 tracking-[0.25em] uppercase font-bold bg-black/20 text-red-500 shadow-[0_0_25px_rgba(0,0,0,0.6)] font-sharetech">
+                  Which one is the deepfake?
+                </h1>
 
-          <div className="space-y-3">
-            <h1 className="text-2xl 2xl:text-3xl font-bold text-red-500 font-sharetech tracking-[0.25em] uppercase">
-              How the game works
-            </h1>
-            <p className="text-sm 2xl:text-base text-slate-200 font-sharetech leading-relaxed">
-              Each round you will see{" "}
-              <span className="font-semibold">two face images</span>. One of
-              them is a{" "}
-              <span className="text-red-400 font-semibold">deepfake </span>
-              (AI-generated), the other is likely real.
-            </p>
-            <ul className="text-sm text-slate-300 font-sharetech space-y-2 list-disc list-inside">
-              <li>
-                Study both images carefully and
-                <span className="font-semibold">
-                  {" "}
-                  tap the one you think is the deepfake
-                </span>
-                .
-              </li>
-              <li>
-                You only get{" "}
-                <span className="font-semibold">one choice per round</span>.
-                Once you pick, that decision is locked in.
-              </li>
-              <li>
-                A <span className="font-semibold">timer</span> at the top counts
-                down. If it hits zero, you lose that round automatically.
-              </li>
-              <li>
-                Your <span className="font-semibold">streak</span> increases
-                with each correct answer. You start at 30 seconds and with each
-                streak increase, you lose 3 seconds.
-              </li>
-              <li>
-                A vertical <span className="font-semibold">progress bar</span>{" "}
-                on the left shows how far you are through the image set.
-              </li>
-            </ul>
-          </div>
-
-          {/* FEEDBACK EXPLANATION */}
-          <div className="space-y-3">
-            <h2 className="text-sm 2xl:text-base font-bold text-red-400 font-sharetech tracking-[0.25em] uppercase">
-              Feedback & explanations
-            </h2>
-            <ul className="text-sm text-slate-300 font-sharetech space-y-2 list-disc list-inside">
-              <li>
-                After you click — or when time runs out — a
-                <span className="font-semibold"> feedback panel</span> appears
-                at the bottom.
-              </li>
-              <li>
-                It tells you whether your choice was
-                <span className="text-green-400 font-semibold">
-                  {" "}
-                  correct
-                </span>{" "}
-                or
-                <span className="text-red-400 font-semibold"> incorrect</span>,
-                and explains
-                <span className="font-semibold">
-                  {" "}
-                  what gives the deepfake away
-                </span>
-                .
-              </li>
-              <li>
-                The system also highlights the deepfake with
-                <span className="font-semibold"> red circles</span> over
-                suspicious areas (e.g. hairline, earrings, shoulders).
-              </li>
-              <li>
-                The deepfake image for that round is then shown again in the
-                <span className="font-semibold"> center of the screen</span>, so
-                you can inspect it more closely.
-              </li>
-              <li>
-                Press <span className="font-semibold">“Next”</span> to flip the
-                cards, load the next image pair, and continue your streak.
-              </li>
-            </ul>
-          </div>
-
-          {/* START BUTTON */}
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={handleStart}
-              className="flex justify-center items-center px-8 py-2 rounded-full border border-red-500 text-[0.8rem] tracking-[0.25em] uppercase font-semibold font-sharetech bg-black/40 text-red-400 hover:bg-red-500/10 hover:text-red-200 hover:shadow-[0_0_25px_rgba(248,113,113,0.7)] transition"
-            >
-              <CheckCircle className="h-5 w-5 mr-2" /> Start
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* RIGHT PANEL */}
-      <div className="w-full h-full flex items-start 2xl:items-center justify-center p-4">
-        <div className="flex justify-center w-full">
-          <div className="relative w-full max-w-sm">
-            {/* Mock progress bar */}
-            <div className="absolute py-5 -left-5 top-6 hidden 2xl:flex flex-col items-center">
-              <div className="relative w-2 h-40 rounded-full bg-slate-800/70 overflow-hidden">
-                <div className="absolute bottom-0 left-0 w-full h-1/3 bg-red-500 shadow-[0_0_20px_rgba(248,113,113,0.8)]" />
+                <p className="text-xs md:text-sm text-slate-300 max-w-xl text-center tracking-[0.12em] uppercase font-sharetech">
+                  Study the faces carefully and pick the image that looks
+                  artificially generated.
+                </p>
+                <StreakTimer secondsLeft={secondsLeft} streak={streak} />
               </div>
             </div>
+            {([0, 1] as const).map((displayIndex) => {
+              const pair = imagePairs[pairIndex] || [];
+              const dataIndex = layout[displayIndex];
+              const src = pair[dataIndex] || pair[0] || "";
 
-            {/* Mock cards */}
-            <div className="space-y-4">
-              <p className="text-[0.7rem] py-2 uppercase tracking-[0.2em] text-slate-300 font-sharetech text-center">
-                Example round
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="h-40 2xl:h-44 rounded-2xl border border-red-900/60 bg-[#060712]/90 overflow-hidden relative">
-                  <div className="w-full h-full bg-linear-to-br from-slate-600/50 to-slate-900" />
-                  <span className="absolute left-3 top-3 text-[0.6rem] uppercase tracking-[0.16em] bg-black/70 border border-red-500/60 rounded-full px-3 py-0.5 font-sharetech text-red-200">
-                    Image A
-                  </span>
-                </div>
-                <div className="h-40 2xl:h-44 rounded-2xl border border-red-900/60 bg-[#060712]/90 overflow-hidden relative">
-                  <div className="w-full h-full bg-linear-to-br from-slate-500/40 to-slate-900" />
-                  <span className="absolute left-3 top-3 text-[0.6rem] uppercase tracking-[0.16em] bg-black/70 border border-red-500/60 rounded-full px-3 py-0.5 font-sharetech text-red-200">
-                    Image B
-                  </span>
-                  {/* Example hotspot circle */}
-                  <div className="absolute right-6 top-8 w-7 h-7 rounded-full border-2 border-red-400/90 shadow-[0_0_12px_rgba(248,113,113,0.7)]" />
-                </div>
-              </div>
+              // Grid placement: displayIndex 0 at former "2" slot, displayIndex 1 at former "3" slot
+              const placement =
+                displayIndex === 0
+                  ? "col-span-2 row-span-3 col-start-2 row-start-3 -translate-1/4 "
+                  : "col-span-2 row-span-3 col-start-4 row-start-3 -translate-1/4 ";
 
-              {/* Mock centered wrong-card overlay */}
-              <div className="space-y-4 mt-4">
-                <p className="text-[0.7rem] py-2 uppercase tracking-[0.2em] text-slate-300 font-sharetech text-center mt-8">
-                  Feedback View
-                </p>
-                <div className="relative">
-                  <div className="mx-auto w-52 h-32 rounded-2xl border border-red-900/80 bg-[#060712]/95 shadow-[0_0_25px_rgba(0,0,0,0.9)] overflow-hidden">
-                    <div className="w-full h-full bg-linear-to-br from-slate-700/60 to-slate-950" />
-                    <span className="absolute inset-x-0 top-2 text-center text-[0.6rem] uppercase tracking-[0.18em] text-slate-300 font-sharetech">
-                      Highlighted wrong image
-                    </span>
+              return (
+                <div key={displayIndex} className={`${placement} size-full`}>
+                  <div className="group h-[70vh] w-full mx-auto perspective-[1000px] flex items-center justify-center">
+                    <div
+                      ref={(el) => {
+                        boxRef.current[displayIndex] = el;
+                      }}
+                      className="flip-card-inner rounded-3xl w-full h-full border border-red-900/60 bg-[#060712]/90 transition-shadow duration-300"
+                    >
+                      {/* FRONT */}
+                      <div className="flip-card-front relative flex items-center bg-center justify-center rounded-3xl overflow-hidden size-full">
+                        <button
+                          type="button"
+                          onClick={() => handleCardClick(displayIndex)}
+                          disabled={showFeedback}
+                          className={`relative w-full h-full overflow-hidden cursor-pointer transition-transform duration-300 ${
+                            showFeedback
+                              ? "cursor-not-allowed opacity-60"
+                              : "group-hover:scale-[1.02]"
+                          }`}
+                        >
+                          <div className="relative w-full h-full">
+                            <img
+                              className="w-full h-full object-cover block size-[90%]"
+                              src={src}
+                              alt={`Card ${displayIndex + 1}`}
+                            />
+                          </div>
+                        </button>
+                      </div>
+
+                      {/* BACK */}
+                      <div
+                        className="flip-card-back flex items-center justify-center rounded-3xl border bg-black border-red-500 text-3xl font-bold text-red-400"
+                        style={{
+                          backgroundImage:
+                            "radial-gradient(1200px 600px at 20% -10%, rgba(227,6,19,0.25), transparent 60%), radial-gradient(800px 500px at 90% 110%, rgba(227,6,19,0.18), transparent 55%)",
+                        }}
+                      >
+                        <img
+                          className="flex scale-105 justify-center items-center"
+                          src="./logo-icon.png"
+                          alt="Phantom's Lab"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Mock feedback popup */}
-              <div className="mt-5 rounded-xl border border-red-500 bg-slate-900/95 text-slate-50 shadow-[0_0_25px_rgba(239,68,68,0.6)] px-4 py-3 text-xs font-sharetech">
-                <p className="text-[0.6rem] uppercase tracking-[0.25em] text-red-400 mb-1">
-                  Deepfake feedback
-                </p>
-                <p className="font-semibold text-xs mb-1">
-                  Correct — this one is the deepfake.
-                </p>
-                <p className="text-xs text-slate-200 mb-2">
-                  Notice the irregular hairline and inconsistent lighting around
-                  the neck and shoulders.
-                </p>
-              </div>
+              );
+            })}
+            <div className="fixed left-0 text-white flex items-center justify-center w-40 rounded-r-md shadow h-full">
+              {/* Vertical progress bar on the left */}
+              <VerticalProgress
+                current={currentPairNumber}
+                total={totalPairs}
+              />
             </div>
           </div>
         </div>
-      </div>
-    </div>
+
+        {/* DUPLICATE WRONG CARD OVERLAY */}
+        {showFeedback && wrongCardIndex !== null && (
+          <div className="fixed inset-0 z-30 flex items-start justify-center pt-12 pointer-events-none">
+            <div className="h-[70vh] w-[min(90vw,28rem)] rounded-3xl border border-red-900/80 bg-[#060712]/95 shadow-[0_0_40px_rgba(0,0,0,0.9)] overflow-hidden">
+              <div className="relative w-full h-full">
+                {(() => {
+                  const pair = imagePairs[pairIndex] || [];
+                  const dataIndex = layout[wrongCardIndex];
+                  const src = pair[dataIndex] || pair[0] || "";
+                  const meta = deepfakeMeta[pairIndex];
+                  const isFakeWrong = meta && dataIndex === meta.fakeIndex;
+
+                  return (
+                    <>
+                      <img
+                        className="w-full h-full object-cover block"
+                        src={src}
+                        alt={`Focused card ${wrongCardIndex + 1}`}
+                      />
+                      {isFakeWrong &&
+                        meta?.hotspots?.map((spot, i) => (
+                          <Circle
+                            key={i}
+                            size={spot.size || 28}
+                            variant="outline"
+                            className="absolute -translate-x-1/2 -translate-y-1/2 border-b-red-400"
+                            style={{
+                              left: `${spot.x}%`,
+                              top: `${spot.y}%`,
+                            }}
+                          />
+                        ))}
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BOTTOM POP-UP FEEDBACK */}
+        <FeedbackPopup
+          show={showFeedback}
+          title={feedbackTitle}
+          message={feedbackMessage}
+          onClose={() => setShowFeedback(false)}
+          onNext={handleFlip}
+        />
+      </section>
+    </>
   );
-}
+};
+
+export default Test;

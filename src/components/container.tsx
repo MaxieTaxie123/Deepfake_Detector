@@ -1,7 +1,7 @@
+import VerticalProgress from "./ProgressBar";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import FeedbackPopup from "./FeedbackPopup";
 import StreakTimer from "./StreakTimer";
-import VerticalProgress from "./ProgressBar";
 import Circle from "./Circles";
 import { imagePairs } from "../data/pairs";
 import { deepfakeMeta } from "../data/deepfakeMeta";
@@ -26,7 +26,7 @@ type ContainerProps = {
   onFinished?: () => void;
 };
 
-const Container: React.FC<ContainerProps> = ({ onFinished }) => {
+const Test: React.FC<ContainerProps> = ({ onFinished }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const boxRef = useRef<(HTMLDivElement | null)[]>([]);
   const [pairIndex, setPairIndex] = useState(0);
@@ -194,155 +194,157 @@ const Container: React.FC<ContainerProps> = ({ onFinished }) => {
       (dataIdx) => dataIdx === currentMeta.fakeIndex
     );
 
-    wrongCardIndex = fakeDisplayIndex
+    wrongCardIndex = fakeDisplayIndex;
   }
   // --------------------------------------------------------------------
 
   return (
-    <section
-      className="min-h-screen w-full overflow-x-hidden flex items-start justify-center bg-slate-950 text-slate-50 px-4 py-5 relative select-none"
-      style={{
-        backgroundImage:
-          "radial-gradient(1200px 600px at 20% -10%, rgba(227,6,19,0.25), transparent 60%), radial-gradient(800px 500px at 90% 110%, rgba(227,6,19,0.18), transparent 55%)",
-      }}
-    >
-      <div className="flex w-full max-w-6xl gap-6">
-        {/* Vertical progress bar on the left */}
-        <VerticalProgress current={currentPairNumber} total={totalPairs} />
+    <>
+      <section
+        className="min-h-screen w-full overflow-x-hidden text-slate-50 relative select-none"
+        style={{
+          backgroundImage:
+            "radial-gradient(1200px 600px at 20% -10%, rgba(227,6,19,0.25), transparent 60%), radial-gradient(800px 500px at 90% 110%, rgba(227,6,19,0.18), transparent 55%)",
+        }}
+      >
+        <div className="h-screen w-auto flex items-center justify-center p-4">
+          <div ref={containerRef} className="grid grid-cols-5 grid-rows-5 gap-4 place-items-center place-content-center text-center w-full h-full">
+            <div className="fixed col-span-3 col-start-2 row-start-1 row-span-2 h-max w-max top-1">
+              {/* Top label + title block */}
+              <div className="flex flex-col items-center gap-4 p-5">
+                <h1 className="px-6 py-2 rounded-full border border-red-500 tracking-[0.25em] uppercase font-bold bg-black/20 text-red-500 shadow-[0_0_25px_rgba(0,0,0,0.6)] font-sharetech">
+                  Which one is the deepfake?
+                </h1>
 
-        {/* Main column */}
-        <div className="flex-1 flex flex-col items-center gap-8">
-          {/* Top label + title block */}
-          <div className="flex flex-col items-center gap-4">
-            <h1 className="px-6 py-2 rounded-full border border-red-500 tracking-[0.25em] uppercase font-bold bg-black/20 text-red-500 shadow-[0_0_25px_rgba(0,0,0,0.6)] font-sharetech">
-              Which one is the deepfake?
-            </h1>
-
-            <p className="text-xs md:text-sm text-slate-300 max-w-xl text-center tracking-[0.12em] uppercase font-sharetech">
-              Study the faces carefully and pick the image that looks
-              artificially generated.
-            </p>
-
-            <StreakTimer secondsLeft={secondsLeft} streak={streak} />
-          </div>
-
-          <div
-            ref={containerRef}
-            className="grid grid-cols-1 md:grid-cols-2 gap-10 w-full max-w-5xl"
-          >
-            {Array.from({ length: 2 }).map((_, displayIndex) => {
+                <p className="text-xs md:text-sm text-slate-300 max-w-xl text-center tracking-[0.12em] uppercase font-sharetech">
+                  Study the faces carefully and pick the image that looks
+                  artificially generated.
+                </p>
+                <StreakTimer secondsLeft={secondsLeft} streak={streak} />
+              </div>
+            </div>
+            {([0, 1] as const).map((displayIndex) => {
               const pair = imagePairs[pairIndex] || [];
-              const dataIndex = layout[displayIndex]; // map display -> data
+              const dataIndex = layout[displayIndex];
               const src = pair[dataIndex] || pair[0] || "";
 
-              return (
-                <div
-                  key={displayIndex}
-                  className="group h-[70vh] w-full max-w-120 mx-auto perspective-[1000px] flex items-center justify-center"
-                >
-                  <div
-                    ref={(el) => {
-                      boxRef.current[displayIndex] = el;
-                    }}
-                    className="flip-card-inner rounded-3xl w-[40vw] h-full border border-red-900/60 bg-[#060712]/90 transition-shadow duration-300"
-                  >
-                    {/* FRONT */}
-                    <div className="flip-card-front relative flex items-center bg-center justify-center rounded-3xl overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => handleCardClick(displayIndex)}
-                        disabled={showFeedback}
-                        className={`relative w-full h-full overflow-hidden cursor-pointer transition-transform duration-300
-                                ${
-                                  showFeedback
-                                    ? "cursor-not-allowed opacity-60"
-                                    : "group-hover:scale-[1.02]"
-                                }`}
-                      >
-                        <div className="relative w-full h-full">
-                          <img
-                            className="w-full h-full object-cover block"
-                            src={src}
-                            alt={`Card ${displayIndex + 1}`}
-                          />
-                        </div>
-                      </button>
-                    </div>
+              // Grid placement: displayIndex 0 at former "2" slot, displayIndex 1 at former "3" slot
+              const placement =
+                displayIndex === 0
+                  ? "col-span-2 row-span-3 col-start-2 row-start-3 -translate-1/4 "
+                  : "col-span-2 row-span-3 col-start-4 row-start-3 -translate-1/4 ";
 
-                    {/* BACK */}
+              return (
+                <div key={displayIndex} className={`${placement} size-full`}>
+                  <div className="group h-[70vh] w-full mx-auto perspective-[1000px] flex items-center justify-center">
                     <div
-                      className="flip-card-back flex items-center justify-center rounded-3xl
-                                border bg-black border-red-500 text-3xl font-bold text-red-400"
-                      style={{
-                        backgroundImage:
-                          "radial-gradient(1200px 600px at 20% -10%, rgba(227,6,19,0.25), transparent 60%), radial-gradient(800px 500px at 90% 110%, rgba(227,6,19,0.18), transparent 55%)",
+                      ref={(el) => {
+                        boxRef.current[displayIndex] = el;
                       }}
+                      className="flip-card-inner rounded-3xl w-full h-full border border-red-900/60 bg-[#060712]/90 transition-shadow duration-300"
                     >
-                      <img
-                        className="flex scale-105 justify-center items-center"
-                        src="./logo-icon.png"
-                        alt="Phantom's Lab"
-                      />
+                      {/* FRONT */}
+                      <div className="flip-card-front relative flex items-center bg-center justify-center rounded-3xl overflow-hidden size-full">
+                        <button
+                          type="button"
+                          onClick={() => handleCardClick(displayIndex)}
+                          disabled={showFeedback}
+                          className={`relative w-full h-full overflow-hidden cursor-pointer transition-transform duration-300 ${
+                            showFeedback
+                              ? "cursor-not-allowed opacity-60"
+                              : "group-hover:scale-[1.02]"
+                          }`}
+                        >
+                          <div className="relative w-full h-full">
+                            <img
+                              className="w-full h-full object-cover block size-[90%]"
+                              src={src}
+                              alt={`Card ${displayIndex + 1}`}
+                            />
+                          </div>
+                        </button>
+                      </div>
+
+                      {/* BACK */}
+                      <div
+                        className="flip-card-back flex items-center justify-center rounded-3xl border bg-black border-red-500 text-3xl font-bold text-red-400"
+                        style={{
+                          backgroundImage:
+                            "radial-gradient(1200px 600px at 20% -10%, rgba(227,6,19,0.25), transparent 60%), radial-gradient(800px 500px at 90% 110%, rgba(227,6,19,0.18), transparent 55%)",
+                        }}
+                      >
+                        <img
+                          className="flex scale-105 justify-center items-center"
+                          src="./logo-icon.png"
+                          alt="Phantom's Lab"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
               );
             })}
-          </div>
-        </div>
-      </div>
-
-      {/* DUPLICATE WRONG CARD OVERLAY */}
-      {showFeedback && wrongCardIndex !== null && (
-        <div className="fixed z-30 flex items-center justify-center pointer-events-none">
-          <div className="h-[70vh] w-[min(90vw,28rem)] rounded-3xl border border-red-900/80 bg-[#060712]/95 shadow-[0_0_40px_rgba(0,0,0,0.9)] overflow-hidden">
-            <div className="relative w-full h-full">
-              {(() => {
-                const pair = imagePairs[pairIndex] || [];
-                const dataIndex = layout[wrongCardIndex];
-                const src = pair[dataIndex] || pair[0] || "";
-                const meta = deepfakeMeta[pairIndex];
-                const isFakeWrong =
-                  meta && dataIndex === meta.fakeIndex;
-
-                return (
-                  <>
-                    <img
-                      className="w-full h-full object-cover block"
-                      src={src}
-                      alt={`Focused card ${wrongCardIndex + 1}`}
-                    />
-                    {isFakeWrong &&
-                      meta?.hotspots?.map((spot, i) => (
-                        <Circle
-                          key={i}
-                          size={spot.size || 28}
-                          variant="outline"
-                          className="absolute -translate-x-1/2 -translate-y-1/2 border-b-red-400"
-                          style={{
-                            left: `${spot.x}%`,
-                            top: `${spot.y}%`,
-                          }}
-                        />
-                      ))}
-                  </>
-                );
-              })()}
+            <div className="fixed left-0 text-white flex items-center justify-center w-40 rounded-r-md shadow h-full">
+              {/* Vertical progress bar on the left */}
+              <VerticalProgress
+                current={currentPairNumber}
+                total={totalPairs}
+              />
             </div>
           </div>
         </div>
-      )}
 
-      {/* BOTTOM POP-UP FEEDBACK */}
-      <FeedbackPopup
-        show={showFeedback}
-        title={feedbackTitle}
-        message={feedbackMessage}
-        onClose={() => setShowFeedback(false)}
-        onNext={handleFlip}
-      />
-    </section>
+        {/* DUPLICATE WRONG CARD OVERLAY */}
+        {showFeedback && wrongCardIndex !== null && (
+          <div className="fixed inset-0 z-30 flex items-start justify-center pt-12 pointer-events-none">
+            <div className="h-[70vh] w-[min(90vw,28rem)] rounded-3xl border border-red-900/80 bg-[#060712]/95 shadow-[0_0_40px_rgba(0,0,0,0.9)] overflow-hidden">
+              <div className="relative w-full h-full">
+                {(() => {
+                  const pair = imagePairs[pairIndex] || [];
+                  const dataIndex = layout[wrongCardIndex];
+                  const src = pair[dataIndex] || pair[0] || "";
+                  const meta = deepfakeMeta[pairIndex];
+                  const isFakeWrong = meta && dataIndex === meta.fakeIndex;
+
+                  return (
+                    <>
+                      <img
+                        className="w-full h-full object-cover block"
+                        src={src}
+                        alt={`Focused card ${wrongCardIndex + 1}`}
+                      />
+                      {isFakeWrong &&
+                        meta?.hotspots?.map((spot, i) => (
+                          <Circle
+                            key={i}
+                            size={spot.size || 28}
+                            variant="outline"
+                            className="absolute -translate-x-1/2 -translate-y-1/2 border-b-red-400"
+                            style={{
+                              left: `${spot.x}%`,
+                              top: `${spot.y}%`,
+                            }}
+                          />
+                        ))}
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BOTTOM POP-UP FEEDBACK */}
+        <FeedbackPopup
+          show={showFeedback}
+          title={feedbackTitle}
+          message={feedbackMessage}
+          onClose={() => setShowFeedback(false)}
+          onNext={handleFlip}
+        />
+      </section>
+    </>
   );
 };
 
-export default Container;
+export default Test;
